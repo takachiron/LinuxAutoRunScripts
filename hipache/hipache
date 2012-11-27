@@ -17,7 +17,7 @@
 # Description: Start/Stop the hipache daemon
 ### END INIT INFO
 
-pname=apache2
+pname=hipache
 EXEC=/usr/bin/hipache
 PIDFILE=/var/run/hipache.pid
 CONF="/usr/lib/nodejs/hipache/config/config.json"
