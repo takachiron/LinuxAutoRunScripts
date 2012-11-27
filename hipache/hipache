@@ -1,0 +1,104 @@
+#/bin/sh
+###############
+# REDHAT chkconfig header
+#
+# chkconfig: 35 99 60
+# description: xxxxxxxxxxxxxxxxxx \
+#              xxxxxxxxxxxxxxx \
+### BEGIN INIT INFO
+# Provides: hipache
+# Required-Start: Redis
+# Should-Start:
+# Should-Stop:
+# Required-Stop:
+# Default-Start:                3 5
+# Default-Stop:                 0 1 2 6
+# Short-Description: hipache Web Proxy Server
+# Description: Start/Stop the hipache daemon
+### END INIT INFO
+
+pname=apache2
+EXEC=/usr/bin/hipache
+PIDFILE=/var/run/hipache.pid
+CONF="/usr/lib/nodejs/hipache/config/config.json"
+STATUSLOGFILE="/var/log/hipache/status.log"
+
+status_chk_ps() {
+    ps axuwwwf | grep `cat ${PIDFILE} | cut -d " " -f 1` | grep hipache
+}
+
+status_chk() {
+    rtn=""
+    if [ -f $PIDFILE ]; then
+        PID=$(cat $PIDFILE)
+        if [ -x /proc/${PID} ]; then
+            chk=`status_chk_ps`
+            if [ -n "${chk}" ]; then
+                rtn=$PID
+            fi
+        fi
+    fi
+    echo $rtn
+}
+
+status() {
+    rtn=""
+    status_chk=`status_chk`
+    if [ -n "${status_chk}" ]; then
+        rtn="${PIDFILE} exists, process is already running or crashed. PID -> (${status_chk})"
+    else
+        rtn="hipache process is not running"
+    fi
+    echo $rtn
+}
+
+start() {
+    status_chk=`status_chk`
+    if [ -n "${status_chk}" ]; then
+        echo `status`
+    else
+        echo "Starting hipache Web Proxy Server..."
+        $EXEC $CONF >> $STATUSLOGFILE &
+        echo $! > $PIDFILE
+        sleep 1
+        status_chk=`status_chk`
+        if [ -n "${status_chk}" ]; then
+            echo "hipache Web Proxy Server running. PID -> (${status_chk})"
+        fi
+    fi
+}
+
+stop() {
+    status_chk=`status_chk`
+    if [ -n "${status_chk}" ]; then
+        kill $status_chk
+        status_chk=`status_chk`
+        if [ -n "${status_chk}" ]; then
+            echo "error. PID -> (${status_chk})"
+        else
+            echo "hipache stopped."
+        fi
+    else
+        echo "hipache process is not running"
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart|reload)
+        stop
+        start
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo "Please use start or stop or restart or reload as first argument"
+        ;;
+esac
+
